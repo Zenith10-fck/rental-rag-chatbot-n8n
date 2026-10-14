@@ -1,0 +1,128 @@
+{
+  "name": "Ingestion - Cirebon PS Hub",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b74faaeb-d71d-4134-afdb-af8e075c2407",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const faqs = [\n  \"Jam Operasional: Toko Cirebon PS Hub buka setiap hari dari jam 09.00 pagi sampai 22.00 malam.\",\n  \"Harga Sewa PS4: Sewa PS4 harian harganya Rp 75.000/hari. Sewa 3 hari diskon jadi Rp 200.000.\",\n  \"Harga Sewa PS5: Sewa PS5 harian harganya Rp 150.000/hari. Sewa 3 hari diskon jadi Rp 400.000.\",\n  \"Syarat Sewa: Syarat wajib untuk sewa adalah menjaminkan 2 identitas asli yang masih berlaku (KTP dan SIM/KK) dengan alamat domisili di Cirebon.\",\n  \"Denda Keterlambatan: Keterlambatan pengembalian unit konsol akan dikenakan denda sebesar Rp 10.000 per jam.\",\n  \"Kerusakan saat Sewa: Jika unit rusak karena kelalaian penyewa (jatuh, kena air), biaya perbaikan sepenuhnya ditanggung penyewa.\",\n  \"Servis Stik Drifting: Kami menerima servis stik PS4 dan PS5 yang mengalami analog drifting. Biaya ganti analog Alps original adalah Rp 120.000 per sisi.\",\n  \"Waktu Pengerjaan Servis: Servis stik biasanya memakan waktu 1-2 hari kerja tergantung antrean.\",\n  \"Update Game: Semua konsol yang disewakan sudah ter-install update game terbaru, termasuk roster pemain eFootball dan FC24 paling update.\",\n  \"Delivery Order: Kami menyediakan layanan antar-jemput unit sewa khusus area Kota Cirebon dengan tambahan ongkos kirim Rp 20.000.\",\n  \"Game Tambahan: Penyewa tidak diizinkan menghapus game yang ada atau login menggunakan akun PSN pribadi tanpa izin admin.\",\n  \"Kelengkapan Sewa: Setiap penyewaan 1 unit konsol (PS4/PS5) sudah termasuk 2 buah controller (stik), 1 kabel HDMI, 1 kabel power, dan tas konsol.\"\n];\n\nreturn faqs.map(faq => ({ json: { content: faq } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e0ced736-6f22-4060-b918-625552b89de7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cohere.com/v1/embed",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REPLACE_WITH_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"texts\": [\"={{ $json.content }}\"],\n  \"model\": \"embed-multilingual-v3.0\",\n  \"input_type\": \"search_document\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        384,
+        0
+      ],
+      "id": "11120363-7288-4c9e-aab4-79148ef0f9c8",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "tableId": "faq_documents",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.texts[0] }}"
+            },
+            {
+              "fieldId": "embedding",
+              "fieldValue": "={{ JSON.stringify($json.embeddings[0]) }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        592,
+        0
+      ],
+      "id": "539a7138-57ca-4026-8679-466ae25f11cc",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_ME",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "active": false
+}
